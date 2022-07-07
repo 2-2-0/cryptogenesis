@@ -10,14 +10,14 @@ import sqlite3
 
 # [PARAMS]
 # a token for every <token_rate> seconds
-token_rate = 12
+token_rate = 3
 
 # serial comm:
 port_id = "/dev/ttyACM0"
 port_rate = 115200
 
 class BioChainBlock:
-    def __init__ (self, block_id, previous_hash, timestamp, node_id, challenge, proof_of_work, energy_seconds):
+    def __init__ (self, block_id, previous_hash, timestamp, node_id, challenge, proof_of_work, energy_seconds, average_voltage):
         self.block_data = {
             "block_id": block_id,
             "previous_hash": previous_hash,
@@ -25,7 +25,8 @@ class BioChainBlock:
             "node_id": node_id,
             "challenge": challenge,
             "proof_of_work": proof_of_work,
-            "energy_seconds": energy_seconds
+            "energy_seconds": energy_seconds,
+            "average_voltage": average_voltage
         }
         self.hash = None
 
@@ -52,11 +53,12 @@ class BioChainService:
             self.initChainStorage ()
 
     def initChainStorage (self):
-        sql_query = "CREATE TABLE blocks (block_id INTEGER PRIMARY KEY, previous_hash TEXT NOT NULL, timestamp TEXT NOT NULL, node_id TEXT NOT NULL, challenge TEXT NOT NULL, proof_of_energy TEXT NOT NULL, block_hash TEXT, energy_seconds INTEGER NOT NULL)"
+        sql_query = "CREATE TABLE blocks (block_id INTEGER PRIMARY KEY, previous_hash TEXT NOT NULL, timestamp TEXT NOT NULL, node_id TEXT NOT NULL, challenge TEXT NOT NULL, proof_of_energy TEXT NOT NULL, block_hash TEXT, energy_seconds INTEGER NOT NULL, average_voltage DECIMAL (5, 2) NOT NULL)"
         self.sql.execute (sql_query)
 
         timestamp = datetime.datetime.now ()
-        genesis_block = BioChainBlock (0, 'no_hash', timestamp, 'cryptogenesis', 'CH', 'POW', 0)
+        phrase = "This blockchain is a proof of oxygen created using electricity from a cyanobacterial biophotovoltaic cell."
+        genesis_block = BioChainBlock (0, 'no_hash', timestamp, phrase, 'CH', 'POW', 'ES', 'AV')
 
         self.writeBlock (genesis_block)
         self.chain_storage.commit ()
@@ -67,25 +69,25 @@ class BioChainService:
         block_data = block.block_data
         block_hash = self.hashBlock (block_data)
 
-        sql_query = "INSERT INTO blocks VALUES ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}')".format (block_data ["block_id"], block_data ["previous_hash"], block_data ["timestamp"], block_data ["node_id"], block_data ["challenge"], block_data ["proof_of_work"], block_hash, block_data ["energy_seconds"])
+        sql_query = "INSERT INTO blocks VALUES ({0}, '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}')".format (block_data ["block_id"], block_data ["previous_hash"], block_data ["timestamp"], block_data ["node_id"], block_data ["challenge"], block_data ["proof_of_work"], block_hash, block_data ["energy_seconds"], block_data ["average_voltage"])
         self.sql.execute (sql_query)
 
     def readLastBlock (self):
         sql_query = "SELECT * FROM blocks ORDER BY block_id DESC LIMIT 1;"
         rows = self.sql.execute (sql_query).fetchall () [0]
 
-        block = BioChainBlock (rows [0], rows [1], rows [2], rows [3], rows [4], rows [5], rows [7])
+        block = BioChainBlock (rows [0], rows [1], rows [2], rows [3], rows [4], rows [5], rows [7], rows [8])
         block.hash = rows [6]
         return block
 
-    def addBlock (self, node_id, challenge, proof_of_work, energy_seconds):
+    def addBlock (self, node_id, challenge, proof_of_work, energy_seconds, average_voltage):
         last_block = self.readLastBlock ()
         last_data = last_block.block_data
         last_hash = last_block.hash
 
         block_id = last_data ["block_id"] + 1
         timestamp = datetime.datetime.now ()
-        new_block = BioChainBlock (block_id, last_hash, timestamp, node_id, challenge, proof_of_work, energy_seconds)
+        new_block = BioChainBlock (block_id, last_hash, timestamp, node_id, challenge, proof_of_work, energy_seconds, average_voltage)
 
         self.writeBlock (new_block)
         self.chain_storage.commit ()
@@ -107,8 +109,14 @@ class BioChainService:
 
                 # parser
                 if "CHR:" in input:
-                    challenge_response = input [4:]
+                    #average_voltage = challenge_response = input [4:]
+                    challenge_response = input [4:input.index ("|")]
+                    average_voltage = input [input.index ("|")+1:]
+
+                    #challenge_response = challenge_response [:challenge_response.index ("|")]
+
                     print ("RESPONSE: {0}".format (challenge_response))
+                    print ("Voltage: {0}".format (average_voltage))
                     if self.closeChallenge (self.open_challenge, challenge_response):
                         self.waiting = False
 
@@ -116,8 +124,9 @@ class BioChainService:
                         challenge = self.open_challenge [2]
                         proof_of_work = self.open_challenge [3]
                         energy_seconds = self.production_ratio
+                        #average_voltage = self.open_challenge
 
-                        self.addBlock (node_id, challenge, proof_of_work, energy_seconds)
+                        self.addBlock (node_id, challenge, proof_of_work, energy_seconds, average_voltage)
                         self.open_challenge = None
 
                 if "NOP:" in input:

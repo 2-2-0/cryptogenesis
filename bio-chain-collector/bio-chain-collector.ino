@@ -11,10 +11,14 @@ SHA256 sha;
 
 uint8_t hash [HASH_SIZE];
 
+#define pin_voltage A0
+
 String node_id = "0b1b7a78-2a13-4029-ac6b-d6bdbad6e96";
 String input = "";
 
 String challenge_response;
+int voltage_input;
+int voltage_average;
 
 boolean waiting = false;
 
@@ -22,6 +26,8 @@ void setup() {
   Serial.setTimeout (35);
   Serial.begin (115200);
   Serial.flush ();
+
+  pinMode (pin_voltage, INPUT);
 
   delay (250);
   requestChallenge ();
@@ -34,7 +40,6 @@ void requestChallenge () {
   waiting = true;
 }
 
-
 void loop() {
   if (Serial.available ()>0) {
     input = Serial.readStringUntil ('\n');
@@ -44,11 +49,13 @@ void loop() {
       // got challenge
       input = input.substring (3);
       solveChallenge (input);
+      voltage_average = 0;
       waiting = true;
     } else
     if (input.indexOf ("RQ:0")!=-1) {
       // got challenge response query
-      Serial.print ("CHR:"+challenge_response);
+      voltage_average/= 4;
+      Serial.print ("CHR:"+challenge_response+"|"+voltage_average);
       Serial.print ('\n');
       challenge_response = "";
       waiting = false;
@@ -58,13 +65,16 @@ void loop() {
     }
     input = "";
   }
+  if (waiting) {
+    voltage_average+= analogRead (pin_voltage);
+    voltage_average/= 2;
+  }
 }
 void solveChallenge (String challenge) {
   // hashes challenge using SHA256 - POE/W
   sha.reset ();
   sha.update (challenge.c_str (), challenge.length ());
   sha.finalize (hash, HASH_SIZE);
-
 
   // sends answer back to blockchain
   String pair;
@@ -73,31 +83,5 @@ void solveChallenge (String challenge) {
     pair = String (hash [i], HEX);
     if (pair.length ()<2) pair = "0"+pair;
     challenge_response+= pair;
-  }
-}
-
-void spark () {
-  
-  
-  // receives challenge string (a uuid)
-  String challenge_string = Serial.readStringUntil ('\n');
-  if (challenge_string.indexOf ("CH:")!=-1) {
-    // extract challenge
-    challenge_string = challenge_string.substring (3);
-   
-    // hashes challenge using SHA256 - POE/W
-    sha.reset ();
-    sha.update (challenge_string.c_str (), challenge_string.length ());
-    sha.finalize (hash, HASH_SIZE);
-
-
-    // sends answer back to blockchain
-    String pair;
-    for (int i=0; i<sizeof (hash); i++) {
-      pair = String (hash [i], HEX);
-      if (pair.length ()<2) pair = "0"+pair;
-      Serial.print (pair);
-    }
-    Serial.print ('\n');
   }
 }
