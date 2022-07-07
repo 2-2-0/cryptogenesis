@@ -109,11 +109,8 @@ class BioChainService:
 
                 # parser
                 if "CHR:" in input:
-                    #average_voltage = challenge_response = input [4:]
                     challenge_response = input [4:input.index ("|")]
                     average_voltage = input [input.index ("|")+1:]
-
-                    #challenge_response = challenge_response [:challenge_response.index ("|")]
 
                     print ("RESPONSE: {0}".format (challenge_response))
                     print ("Voltage: {0}".format (average_voltage))
@@ -124,7 +121,6 @@ class BioChainService:
                         challenge = self.open_challenge [2]
                         proof_of_work = self.open_challenge [3]
                         energy_seconds = self.production_ratio
-                        #average_voltage = self.open_challenge
 
                         self.addBlock (node_id, challenge, proof_of_work, energy_seconds, average_voltage)
                         self.open_challenge = None
