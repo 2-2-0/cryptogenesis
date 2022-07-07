@@ -30,7 +30,7 @@ class MicroWebServer (BaseHTTPRequestHandler):
         self.wfile.write (bytes ("<div id=\"block-chain\">", "utf-8"))
         for row in rows:
             self.wfile.write (bytes ("<div class=\"block\">", "utf-8"))
-            self.wfile.write (bytes ("{0}. {1} [{2}] {3}<br />".format (row [0], row [2], row [7], row [3]), "utf-8"))
+            self.wfile.write (bytes ("{0}. {1} [{2}/{3}] {4}<br />".format (row [0], row [2], row [7], row [8], row [3]), "utf-8"))
             self.wfile.write (bytes ("{0}<br />{1}<br />".format (row [6], row [1]), "utf-8"))
             self.wfile.write (bytes ("</div>", "utf-8"))
 
