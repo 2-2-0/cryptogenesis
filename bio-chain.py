@@ -1,4 +1,4 @@
-# bio-chain.py - a micro-ledger blockchain system for organic resources harvesting
+# bio-chain.py - a ledger blockchain system for organic resources harvesting
 # code by 220 for MP, IV & JG | 2022
 
 import serial
@@ -7,6 +7,14 @@ import random
 import hashlib
 import uuid
 import sqlite3
+
+# [PARAMS]
+# a token for every <token_rate> seconds
+token_rate = 12
+
+# serial comm:
+port_id = "/dev/ttyACM0"
+port_rate = 115200
 
 class BioChainBlock:
     def __init__ (self, block_id, previous_hash, timestamp, node_id, challenge, proof_of_work, energy_seconds):
@@ -163,20 +171,10 @@ class BioChainService:
             self.port.write (acknowledgement_string.encode ())
             return False
 
-    def spark (self):
-        challenge_string = "CH:"+challenge
+# main execute
+if __name__ == "__main__":
+    port = serial.Serial (port_id, port_rate)
+    port.flush ()
 
-        # send challenge to node
-        self.port.write (challenge_string.encode ())
-        # solve challenge
-        challenge_answer = hashlib.sha256 (challenge.encode ()).hexdigest ()
-        # get answer
-        received_answer = self.port.readline ().decode ('ascii').rstrip ('\r\n')
-
-        return [challenge_answer==received_answer, challenge, received_answer]
-
-port = serial.Serial ('/dev/ttyACM0', 115200)
-port.flush ()
-
-biochain_service = BioChainService (port, 20)
-biochain_service.execute ()
+    biochain_service = BioChainService (port, token_rate)
+    biochain_service.execute ()
