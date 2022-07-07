@@ -10,7 +10,7 @@ import sqlite3
 
 # [PARAMS]
 # a token for every <token_rate> seconds
-token_rate = 3
+token_rate = 60
 
 # serial comm:
 port_id = "/dev/ttyACM0"
@@ -58,7 +58,7 @@ class BioChainService:
 
         timestamp = datetime.datetime.now ()
         phrase = "This blockchain is a proof of oxygen created using electricity from a cyanobacterial biophotovoltaic cell."
-        genesis_block = BioChainBlock (0, 'no_hash', timestamp, phrase, 'CH', 'POW', 'ES', 'AV')
+        genesis_block = BioChainBlock (0, phrase, timestamp, 'cryptogenesis bio-chain', 'CH', 'POW', 'ES', 'AV')
 
         self.writeBlock (genesis_block)
         self.chain_storage.commit ()
