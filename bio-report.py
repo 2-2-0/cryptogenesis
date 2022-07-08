@@ -18,6 +18,7 @@ class MicroWebServer (BaseHTTPRequestHandler):
         self.end_headers ()
 
         self.wfile.write (bytes ("<html><head><title>cryptogenesis</title>", "utf-8"))
+        self.wfile.write (bytes ("<meta http-equiv=\"refresh\" content=\"10\">", "utf-8"))
         self.wfile.write (bytes ("<style>body {background-color: #202020;color: #e0e0e0;font-family: monospace;font-size: x-small;}h1 {color: #f0fff0;}#block-chain {position: relative;width: 100%;}.block {background-color: #608060;display: inline-block;float: left;padding: 6px 6px 6px 6px;margin: 2vh 2vw 2vh 2vw;border: #507050 medium solid;box-shadow: 2px 2px #000000;}</style>", "utf-8"))
         self.wfile.write (bytes ("</head>", "utf-8"))
         self.wfile.write (bytes ("<h1>cryptogenesis</h1>", "utf-8"))
